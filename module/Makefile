@@ -1,4 +1,4 @@
-obj-m += tsulab.o
+obj-m += mymodule.o
 
 PWD := $(CURDIR)
 
