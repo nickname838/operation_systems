@@ -60,12 +60,6 @@ int main()
 
     while (1)
     {
-        if (wasSigHup)
-        {
-            wasSigHup = 0;
-            puts("sighup");
-            continue;
-        }
 
         fd_set fds;
         FD_ZERO(&fds);
@@ -81,12 +75,17 @@ int main()
             }
         }
 
-        if (pselect(maxFd + 1, &fds, NULL, NULL, NULL, &origMask) < 0 && errno != EINTR)
+        if (pselect(maxFd + 1, &fds, NULL, NULL, NULL, &origMask) < 0)
         {
-            // if (errno == EINTR)
-            // {
-            //     continue;
-            // }
+            if (errno == EINTR)
+            {
+                if (wasSigHup)
+                {
+                    wasSigHup = 0;
+                    puts("sighup");
+                    continue;
+                }
+            }
             perror("pselect");
             exit(EXIT_FAILURE);
         }
@@ -113,13 +112,11 @@ int main()
             int read_len = read(client_fd, buffer, 1024);
             if (read_len > 0)
             {
-                // buffer[1023] = 0;
                 puts(buffer);
             }
             else
             {
                 close(client_fd);
-                // FD_CLR(client_fd, &fds);
                 client_fd = -1;
                 puts("close");
             }
