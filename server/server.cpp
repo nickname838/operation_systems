@@ -53,10 +53,13 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    puts("Listening...");
+
     sigset_t origMask;
     setupSigHupHandler(&origMask);
 
     int client_fd = -1;
+    bool isClient = false;
 
     while (1)
     {
@@ -66,7 +69,7 @@ int main()
         FD_SET(server_fd, &fds);
         int maxFd = server_fd;
 
-        if (client_fd != -1)
+        if (client_fd != -1 && isClient)
         {
             FD_SET(client_fd, &fds);
             if (client_fd > maxFd)
@@ -100,10 +103,16 @@ int main()
                 perror("accept");
                 exit(EXIT_FAILURE);
             }
-            else
+            if (!isClient)
             {
                 client_fd = connect;
-                puts("accept");
+                puts("New connection!");
+                isClient = true;
+            }
+            else
+            {
+                close(connect);
+                puts("Client already exist!");
             }
         }
         if (client_fd != -1 && FD_ISSET(client_fd, &fds))
@@ -112,13 +121,15 @@ int main()
             int read_len = read(client_fd, buffer, 1024);
             if (read_len > 0)
             {
+                buffer[read_len - 1] = 0;
                 puts(buffer);
             }
             else
             {
                 close(client_fd);
                 client_fd = -1;
-                puts("close");
+                isClient = false;
+                puts("Close connection!");
             }
         }
     }
