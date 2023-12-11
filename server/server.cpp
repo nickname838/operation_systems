@@ -63,7 +63,6 @@ int main()
 
     while (1)
     {
-
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(server_fd, &fds);
@@ -78,19 +77,17 @@ int main()
             }
         }
 
-        if (pselect(maxFd + 1, &fds, NULL, NULL, NULL, &origMask) < 0)
+        if (pselect(maxFd + 1, &fds, NULL, NULL, NULL, &origMask) < 0 && errno != EINTR)
         {
-            if (errno == EINTR)
-            {
-                if (wasSigHup)
-                {
-                    wasSigHup = 0;
-                    puts("sighup");
-                    continue;
-                }
-            }
             perror("pselect");
             exit(EXIT_FAILURE);
+        }
+
+        if (wasSigHup)
+        {
+            wasSigHup = 0;
+            puts("sighup");
+            continue;
         }
 
         if (FD_ISSET(server_fd, &fds))
@@ -115,6 +112,7 @@ int main()
                 puts("Client already exist!");
             }
         }
+        
         if (client_fd != -1 && FD_ISSET(client_fd, &fds))
         {
             char buffer[1024]{};
